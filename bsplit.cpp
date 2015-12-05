@@ -59,10 +59,11 @@ int main(int argv, char **argc){
         eentries = tentries - estart;
       else
         eentries = splitting.at(fidx) * tentries;
+      outfiles[fidx]->cd();
       TTree* newt = t->CopyTree("", "", eentries, estart);
       cout << "  " << splitting[fidx] << "% | Tree structure cloned to " << finname  <<  "." << fidx << endl;
       cout << "  " << eentries << " entries copied" << endl;
-      outfiles[fidx]->cd();
+      newt->AutoSave();
       newt->Write();
       newt = 0;
       estart += eentries;
