@@ -54,28 +54,26 @@ int main(int argv, char **argc){
     string tname = t->GetName();
     TFile *currentfile = outfiles[0];
     size_t currentfile_idx = 0;
+    //cout << "Go to file " << currentfile_idx << endl;
     currentfile->cd();
-    TTree *newt = new TTree(tname.c_str(), tname.c_str());
-    for (int idx = 0; idx < tentries; idx ++){
+    TTree *newt = t->CloneTree(0);
+    cout << "Tree structure cloned to " << newt << endl;
+    for (int idx = 0; idx < tentries; idx++){
       // go to the next file if needed
       if (idx / tentries > splitting[currentfile_idx]){
         cout << "Go to file " << currentfile_idx << endl;
         currentfile_idx++;
         newt->Write();
-        currentfile = outfiles[currentfile_idx];
+        currentfile->Write();
+        currentfile = outfiles.at(currentfile_idx);
         currentfile->cd();
-        newt = new TTree(tname.c_str(), tname.c_str());
+        newt = t->CloneTree(0);
+        cout << "newt" << endl;
       }
-      
+      t->GetEntry(idx);
+      newt->Fill();
     }
     newt->Write();
-    // create tree in output files
-    /*
-      outfiles[i]->cd();
-      TTree *tree = new TTree(tname.c_str(), tname.c_str());
-      tree->Write();
-    }
-    */
   }
   fin->Close();
   for (size_t i = 0; i < outfiles.size(); i++)
