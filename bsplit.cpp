@@ -45,35 +45,29 @@ int main(int argv, char **argc){
   /* end */
 //  vector<TTree *> trees;
   TList * dirs = fin->GetListOfKeys();
-  cout << dirs->GetEntries() << endl;
   for (size_t i = 0; i <  dirs->GetEntries(); i++){
     TTree *t = (TTree*)dirs->At(i);
-    cout << "Found TTree " << t->GetName() << endl;
+    t = (TTree*)fin->Get(t->GetName());
+    t->SetBranchStatus("*",1);
+    cout << "Found TTree " << t->GetName() << " " << t << endl;
     //trees.push_back(t);
-    int tentries = t->GetEntries();
-    string tname = t->GetName();
-    TFile *currentfile = outfiles[0];
-    size_t currentfile_idx = 0;
-    //cout << "Go to file " << currentfile_idx << endl;
-    currentfile->cd();
-    TTree *newt = t->CloneTree(0);
-    cout << "Tree structure cloned to " << newt << endl;
-    for (int idx = 0; idx < tentries; idx++){
-      // go to the next file if needed
-      if (idx / tentries > splitting[currentfile_idx]){
-        cout << "Go to file " << currentfile_idx << endl;
-        currentfile_idx++;
-        newt->Write();
-        currentfile->Write();
-        currentfile = outfiles.at(currentfile_idx);
-        currentfile->cd();
-        newt = t->CloneTree(0);
-        cout << "newt" << endl;
-      }
-      t->GetEntry(idx);
-      newt->Fill();
-    }
-    newt->Write();
+    long tentries = t->GetEntries();
+    cout << "  Entries: " << tentries << endl;
+    long estart = 0, eentries;
+    for (int fidx = 0; fidx < outfiles.size(); fidx ++){
+//    TTree *newt = t->CloneTree(0);
+      if (fidx == outfiles.size() - 1)
+        eentries = tentries - estart;
+      else
+        eentries = splitting.at(fidx) * tentries;
+      cout << estart << " " << eentries << endl;
+      TTree* newt = t->CopyTree("", "", eentries, estart);
+      cout << "Tree structure cloned to " << newt << endl;
+      outfiles[fidx]->cd();
+      newt->Write();
+      newt = 0;
+      estart += eentries;
+     } 
   }
   fin->Close();
   for (size_t i = 0; i < outfiles.size(); i++)
