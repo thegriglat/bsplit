@@ -55,14 +55,13 @@ int main(int argv, char **argc){
     cout << "  Entries: " << tentries << endl;
     long estart = 0, eentries;
     for (int fidx = 0; fidx < outfiles.size(); fidx ++){
-//    TTree *newt = t->CloneTree(0);
       if (fidx == outfiles.size() - 1)
         eentries = tentries - estart;
       else
         eentries = splitting.at(fidx) * tentries;
-      cout << estart << " " << eentries << endl;
       TTree* newt = t->CopyTree("", "", eentries, estart);
-      cout << "Tree structure cloned to " << newt << endl;
+      cout << "  " << splitting[fidx] << "% | Tree structure cloned to " << finname  <<  "." << fidx << endl;
+      cout << "  " << eentries << " entries copied" << endl;
       outfiles[fidx]->cd();
       newt->Write();
       newt = 0;
