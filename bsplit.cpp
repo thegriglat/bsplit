@@ -19,13 +19,13 @@ void rebaseSplit(vector<float> &list){
   std::sort(list.begin(), list.end());
 }
 
-int getSumLS(TFile* fin, const char* treename){
+double getSumLS(TFile* fin, const char* treename){
   TTree* tree = (TTree* )fin->Get(treename);
-  long sumLS = 0;
-  int LS;
+  double sumLS = 0;
+  float LS;
   tree->SetBranchStatus("*", 0);
-  tree->SetBranchStatus("LuminosityBlock", 1);
-  tree->SetBranchAddress("LuminosityBlock", &LS);
+  tree->SetBranchStatus("SingleTop_1__BJet_1__Pt", 1);
+  tree->SetBranchAddress("SingleTop_1__BJet_1__Pt", &LS);
   for (int eid = 0; eid < tree->GetEntries(); eid++){
     tree->GetEntry(eid);
     sumLS += LS;
@@ -84,20 +84,20 @@ int main(int argv, char **argc){
      } 
   }
   // Verifying
-  cout << "Verifying by sum of LuminosityBlock branch values ..." << endl;
+  cout << "Verifying by sum of SingleTop_1__BJet_1__Pt branch values ..." << endl;
   for (size_t i = 0; i <  dirs->GetEntries(); i++){
     TTree *t = (TTree*)dirs->At(i);
     t = (TTree*)fin->Get(t->GetName());
-    long sumLS = 0;
-    long insumLS = getSumLS(fin, t->GetName());
-    cout << "Sum of 'Luminosityblock' in tree " << t->GetName() << " = " << insumLS  << endl; 
+    double sumLS = 0;
+    double insumLS = getSumLS(fin, t->GetName());
+    cout << "Sum of 'SingleTop_1__BJet_1__Pt' in tree " << t->GetName() << " = " << insumLS  << endl; 
     for (int fid = 0; fid < outfiles.size(); fid++){
-      long LS = getSumLS(outfiles[fid], t->GetName());
-      cout << "  File: ." << fid << "| Sum of 'Luminosityblock' in tree " << t->GetName() << " = " << LS << endl; 
+      double LS = getSumLS(outfiles[fid], t->GetName());
+      cout << "  File: ." << fid << "| Sum of 'SingleTop_1__BJet_1__Pt' in tree " << t->GetName() << " = " << LS << endl; 
       sumLS += LS;
     }
     if (sumLS == insumLS)
-      cout << "==> OK. Sum of Luminosity block is equal." << endl;
+      cout << "==> OK. Sum of SingleTop_1__BJet_1__Pt is equal." << endl;
     else
       cout << "==> Something wrong. " << insumLS << " != " << sumLS << endl;
   }
