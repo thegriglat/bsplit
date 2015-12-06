@@ -98,12 +98,16 @@ int main(int argv, char **argc){
     }
     if (sumLS == insumLS)
       cout << "==> OK. Sum of SingleTop_1__BJet_1__Pt is equal." << endl;
-    else
+    else{
       cout << "==> Something wrong. " << insumLS << " != " << sumLS << endl;
+      cout << "Exiting ..." << endl;
+      fin->Close();
+      for (size_t i = 0; i < outfiles.size(); i++)  outfiles[i]->Close();
+      return 1;
+    }
   }
   
   fin->Close();
-  for (size_t i = 0; i < outfiles.size(); i++)
-    outfiles[i]->Close();
+  for (size_t i = 0; i < outfiles.size(); i++)  outfiles[i]->Close();
   return 0;
 }
