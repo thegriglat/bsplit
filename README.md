@@ -1,9 +1,5 @@
 # bsplit
 
-Usage: ./bsplit file "splitting"
+Usage: ./bsplit file training-part
 
-splitting is ':'-separated:
-  * 1:1 means splitting input file 50%/50%
-  * 1:2 -- 33%/67%
-  * any number of ':' allowed
-
+e.g.: ./bsplit input.root 0.3 # will produce random 30% training.root and 70% testing.root

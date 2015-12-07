@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <algorithm>
+#include <random>
 #include "stdlib.h"
 
 #include "TFile.h"
@@ -11,13 +12,6 @@
 
 using namespace std;
 using namespace ROOT;
-
-void rebaseSplit(vector<float> &list){
-  float sum = 0;
-  for (size_t i = 0; i < list.size(); i++) sum += list[i];
-  for (size_t i = 0; i < list.size(); i++) list[i] = list[i] / sum;
-  std::sort(list.begin(), list.end());
-}
 
 double getSumLS(TFile* fin, const char* treename){
   TTree* tree = (TTree* )fin->Get(treename);
@@ -35,71 +29,68 @@ double getSumLS(TFile* fin, const char* treename){
 
 int main(int argv, char **argc){
   string finname  = argc[1];
-  /* read splitting */
-  string splitstr = argc[2];
-  vector<float> splitting;
-  string tmp = "";
-  for (size_t i = 0; i < splitstr.length(); i++){
-    if (splitstr.at(i) == ':'){
-      splitting.push_back(atof(tmp.c_str()));
-      tmp = "";
-      continue;
-    }
-    tmp += splitstr.at(i);
-  }
-  splitting.push_back(atof(tmp.c_str()));
-  rebaseSplit(splitting);
-  for (size_t i = 0; i < splitting.size(); i++)
-    cout << "Split ratio is " << splitting.at(i) << endl;
+  float trainperc = atof(argc[2]);
+  cout << "Split ratio is " << trainperc << " / "<< 1 - trainperc << endl;
   cout << "Opening file " << finname << endl;
   TFile *fin = new TFile(finname.c_str());
   vector<TFile *> outfiles;
-  for (size_t i = 0; i < splitting.size(); i++)
-    outfiles.push_back(new TFile((finname + "." + i), "RECREATE"));
-  /* end */
-//  vector<TTree *> trees;
+  outfiles.push_back(new TFile((finname + ".training.root").c_str(), "RECREATE"));
+  outfiles.push_back(new TFile((finname + ".testing.root").c_str(), "RECREATE"));
+
   TList * dirs = fin->GetListOfKeys();
+
+  random_device _randomDevice;
+  mt19937 _generator (_randomDevice());
+  uniform_real_distribution<> _uniformDist (0, 1);
+
   for (size_t i = 0; i <  dirs->GetEntries(); i++){
     TTree *t = (TTree*)dirs->At(i);
     t = (TTree*)fin->Get(t->GetName());
     t->SetBranchStatus("*",1);
     cout << "Found TTree " << t->GetName() << " " << t << endl;
-    //trees.push_back(t);
     long tentries = t->GetEntries();
     cout << "  Entries: " << tentries << endl;
     long estart = 0, eentries;
-    for (int fidx = 0; fidx < outfiles.size(); fidx ++){
-      if (fidx == outfiles.size() - 1)
-        eentries = tentries - estart;
-      else
-        eentries = splitting.at(fidx) * tentries;
-      outfiles[fidx]->cd();
-      TTree* newt = t->CopyTree("", "fast", eentries, estart);
-      cout << "  " << splitting[fidx] << "% | Tree structure cloned to " << finname  <<  "." << fidx << endl;
-      cout << "  " << eentries << " entries copied" << endl;
-      newt->AutoSave();
-      newt->Write();
-      newt = 0;
-      estart += eentries;
-     } 
+    outfiles[0]->cd();
+    TTree* newt0 = t->CloneTree(0);
+    outfiles[1]->cd();
+    TTree* newt1 = t->CloneTree(0);
+    for (int eidx = 0; eidx < tentries; eidx++){
+      t->GetEntry(eidx);
+      if (_uniformDist(_generator) < trainperc){
+        newt0->Fill();
+      } else {
+        newt1->Fill();
+      }
+    }
+    newt0->Write();
+    newt1->Write();
+    newt0 = 0;
+    newt1 = 0;
   }
+
   // Verifying
   cout << "Verifying by sum of SingleTop_1__BJet_1__Pt branch values ..." << endl;
   for (size_t i = 0; i <  dirs->GetEntries(); i++){
     TTree *t = (TTree*)dirs->At(i);
     t = (TTree*)fin->Get(t->GetName());
     double sumLS = 0;
+    int trueEntries = t->GetEntries();
+    int sumEntries = 0;
     double insumLS = getSumLS(fin, t->GetName());
     cout << "Sum of 'SingleTop_1__BJet_1__Pt' in tree " << t->GetName() << " = " << insumLS  << endl; 
     for (int fid = 0; fid < outfiles.size(); fid++){
       double LS = getSumLS(outfiles[fid], t->GetName());
       cout << "  File: ." << fid << "| Sum of 'SingleTop_1__BJet_1__Pt' in tree " << t->GetName() << " = " << LS << endl; 
       sumLS += LS;
+      sumEntries += ((TTree*)outfiles[fid]->Get(t->GetName()))->GetEntries();
     }
-    if (sumLS == insumLS)
+    if (sumLS == insumLS and trueEntries == sumEntries){
       cout << "==> OK. Sum of SingleTop_1__BJet_1__Pt is equal." << endl;
-    else{
+      cout << "==> Entries " << trueEntries << " == " << sumEntries << endl;
+    } else{
       cout << "==> Something wrong. " << insumLS << " != " << sumLS << endl;
+      cout << "==> Entries " << trueEntries << " != " << sumEntries << endl;
       cout << "Exiting ..." << endl;
       fin->Close();
       for (size_t i = 0; i < outfiles.size(); i++)  outfiles[i]->Close();
