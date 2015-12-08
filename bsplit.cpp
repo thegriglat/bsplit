@@ -34,8 +34,8 @@ int main(int argv, char **argc){
   cout << "Opening file " << finname << endl;
   TFile *fin = new TFile(finname.c_str());
   vector<TFile *> outfiles;
-  outfiles.push_back(new TFile((finname + ".training.root").c_str(), "RECREATE"));
-  outfiles.push_back(new TFile((finname + ".testing.root").c_str(), "RECREATE"));
+  outfiles.push_back(new TFile((finname + ".0").c_str(), "RECREATE"));
+  outfiles.push_back(new TFile((finname + ".1").c_str(), "RECREATE"));
 
   TList * dirs = fin->GetListOfKeys();
 
